@@ -9,7 +9,9 @@ def parser_args():
     parser.add_argument('--model', type=str)
     parser.add_argument('--data_path', default='../data/dolly.json', type=str)
     parser.add_argument('--local_rank', default=0, type=int)
-    parser.add_argument('--model_name', default='/home/johnlan/pretrained/openllama', type=str)
+    parser.add_argument('--model_path', default='/home/johnlan/pretrained/openllama', type=str)
+    parser.add_argument('--save_path', default='../ckpt/openalpaca', type=str)
+    parser.add_argument('--log_path', default='', type=str)
     return parser.parse_args()
 
 def initialize_distributed(args):
@@ -45,12 +47,13 @@ def main(**args):
     dschf = HfDeepSpeedConfig(args['ds_config_path'])
     args['dschf'] = dschf
 
-    logging.basicConfig(
-        format='%(asctime)s - %(pathname)s[line:%(lineno)d] - %(levelname)s: %(message)s', 
-        level=logging.DEBUG,
-        filename=f'{args["root_dir"]}/rest/{args["model"]}/train_{time.asctime()}.log',
-        filemode='a'
-    )
+    if args['log_path']:
+        logging.basicConfig(
+            format='%(asctime)s - %(pathname)s[line:%(lineno)d] - %(levelname)s: %(message)s', 
+            level=logging.DEBUG,
+            filename=f'{args["log_path"]}/train_{time.asctime()}.log',
+            filemode='w'
+        )
     
     train_data, train_iter, sampler = load_sft_dataset(args)
 
@@ -58,11 +61,9 @@ def main(**args):
     total_steps = args['epochs'] * len(train_data) // dschf.config['train_batch_size']
     args['total_steps'] = total_steps
     agent = load_model(args)
-    save_path = f'{args["root_dir"]}/ckpt/{args["model"]}'
     torch.distributed.barrier()
 
     pbar = tqdm(total=length)    # maximum total number
-    save_counter = 0
     current_step = 0
 
     for epoch_i in tqdm(range(args['epochs'])):
@@ -73,8 +74,8 @@ def main(**args):
                 pbar=pbar
             )
             current_step += 1
-        agent.save_model(save_path, save_counter)
-        save_counter += 1
+    # save at the end of the training
+    agent.save_model(args['save_path'], 0)
 
 if __name__ == "__main__":
     args = parser_args()

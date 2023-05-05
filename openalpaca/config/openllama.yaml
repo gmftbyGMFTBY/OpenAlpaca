@@ -12,5 +12,5 @@ generate_len: 512
 train:
     seed: 0
     warmup_rate: 0.1
-    epochs: 2
+    epochs: 3
     max_length: 1024

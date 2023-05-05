@@ -1,4 +1,4 @@
-import yaml, ipdb
+import yaml
 
 def load_model_config(model, mode):
     # load special config for each model

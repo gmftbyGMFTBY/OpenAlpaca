@@ -28,13 +28,12 @@ import transformers
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
-IGNORE_INDEX = -100
 PROMPT_DICT = {
     "prompt_input": "### Input:\n{input}\n\n### Instruction:\n{instruction}\n\n### Response:",
     "prompt_no_input": "### Instruction:\n{instruction}\n\n### Response:"
 }
 
-def preprocess_openllama(
+def preprocess(
     sources: Sequence[str],
     targets: Sequence[str],
     tokenizer: transformers.PreTrainedTokenizer,
@@ -73,7 +72,7 @@ class SupervisedDataset(Dataset):
         ]
         targets = [example['output'] for example in list_data_dict]
 
-        data_dict = preprocess_openllama(sources, targets, tokenizer, max_length)
+        data_dict = preprocess(sources, targets, tokenizer, max_length)
 
         self.input_ids = data_dict["input_ids"]
         self.labels = data_dict["labels"]
@@ -92,7 +91,7 @@ class SupervisedDataset(Dataset):
             batch_first=True,
             padding_value=self.tokenizer.pad_token_id
         )
-        labels = torch.nn.utils.rnn.pad_sequence(labels, batch_first=True, padding_value=IGNORE_INDEX)
+        labels = torch.nn.utils.rnn.pad_sequence(labels, batch_first=True, padding_value=self.tokenizer.pad_token_id)
         return dict(
             input_ids=input_ids,
             labels=labels,

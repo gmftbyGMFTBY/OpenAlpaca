@@ -25,13 +25,6 @@ If you meet the installing errors about torch, please install torch by following
 pip install torch==1.13.1+cu116 -f https://download.pytorch.org/whl/torch/
 ```
 
-then, initialize the workspace for running the code:
-
-```bash
-python prepare_workspace.py
-```
-this command will create the `rest`, `ckpt` folders on `../`, savign the checkpoints, generation results and training logs.
-
 Finally, please download the OpenLLaMa model by [this link](https://huggingface.co/openlm-research/open_llama_7b_preview_200bt)
 
 ### 2. Fine-tune
@@ -44,6 +37,15 @@ Then, just run the following commands:
 ./scripts/train_sft.sh
 ```
 This command will train the openllama model (saved under `/home/johnlan/pretrained_models/openllama`) with `../data/openalpaca.json` dataset.
+
+After fine-tuning, you could find the saved checkpoint under `--save_path`, containing the tokenizer, configuration, and deepspeed checkpoints.
+Please running the following codes to convert the deepspeed checkpoints to torch models:
+
+```bash
+python zero_to_fp32.py . pytorch_model.bin
+```
+
+Then, you could get the fine-tuned checkpoints (`--save_path`)
 
 ### 3. Test the model
 

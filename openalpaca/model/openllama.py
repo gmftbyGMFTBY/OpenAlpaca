@@ -5,22 +5,17 @@ class OpenLLAMAModel(nn.Module):
     def __init__(self, **args):
         super(OpenLLAMAModel, self).__init__()
         self.args = args
-        model = args['model_name']
-        self.vocab = LlamaTokenizer.from_pretrained(args['model_name'])
+        model = args['model_path']
+
+        # init the tokenizer
+        self.vocab = LlamaTokenizer.from_pretrained(args['model_path'])
         self.vocab.bos_token_id = 1
         self.vocab.eos_token_id = 2
         self.vocab.pad_token_id = 2
-        self.pad = 2
 
-        if self.args['mode'] == 'train':
-            self.model = LlamaForCausalLM.from_pretrained(model, torch_dtype=torch.float16)
-        else:
-            path = f'{self.args["root_dir"]}/ckpt/openllama/openllama_hf'
-            self.model = LlamaForCausalLM.from_pretrained(path, torch_dtype=torch.float16)
-        self.vocab_size = self.model.config.vocab_size
+        self.model = LlamaForCausalLM.from_pretrained(model, torch_dtype=torch.float16)
         self.model.cuda(torch.cuda.current_device())
-        self.criterion = nn.CrossEntropyLoss(ignore_index=self.pad, reduction='none')
-        self.ppl_criterion = nn.CrossEntropyLoss(ignore_index=-100)
+        self.criterion = nn.CrossEntropyLoss(ignore_index=self.voca.pad_token_id, reduction='none')
         total = sum([param.nelement() for param in self.parameters()])
         print('[!] Model Size: %2fB' % (total/1e9))
 
@@ -53,25 +48,17 @@ class OpenLLAMAModel(nn.Module):
         string = string.replace('<s>', '').replace('</s>', '')
         return string.strip()
 
-    def forward(self, batch):
-        inputs = {}
-        for key, value in batch.items():
-            try:
-                value = value.cuda()
-                inputs[key] = value
-            except:
-                continue
-
+    def forward(self, inputs):
         outputs = self.model(input_ids=inputs['input_ids'], attention_mask=inputs['attention_mask'], labels=inputs['labels'])
         loss = outputs.loss
         logits = outputs.logits[:, :-1, :]
         labels = inputs['labels'][:, 1:]
         
         # calculate the token accuarcy
-        chosen_tokens = torch.max(logits, dim=-1)[1]    # [B, S-1]
-        gen_acc = (chosen_tokens.reshape(-1) == labels.reshape(-1)).to(torch.long)    # [B*S]
+        chosen_tokens = torch.max(logits, dim=-1)[1]
+        gen_acc = (chosen_tokens.reshape(-1) == labels.reshape(-1)).to(torch.long)
         valid_mask = (labels != -100).reshape(-1)
-        valid_tokens = gen_acc & valid_mask    # [B*S]
+        valid_tokens = gen_acc & valid_mask
         gen_acc = valid_tokens.sum().item() / valid_mask.sum().item()
         return loss, gen_acc
  

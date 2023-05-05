@@ -1,7 +1,6 @@
 from header import *
 
-def main():
-    model_path = '/home/johnlan/pretrained_models/openllama'
+def main(model_path, max_length):
     model = LlamaForCausalLM.from_pretrained(model_path).cuda()
     tokenizer = LlamaTokenizer.from_pretrained(model_path)
 
@@ -10,7 +9,7 @@ def main():
     prompt_no_input = f'### Instruction:\n{instruction}\n\n### Response:'
     tokens = tokenizer.encode(prompt_no_input)
     tokens = [1] + tokens + [2] + [1]
-    tokens = torch.LongTensor(tokens[-1024:]).unsqueeze(0).cuda()
+    tokens = torch.LongTensor(tokens[-max_length:]).unsqueeze(0).cuda()
 
     instance = {
         'input_ids': tokens,
@@ -33,4 +32,4 @@ def main():
     print(f'[!] Generation results: {string}')
 
 if __name__ == "__main__":
-    main()
+    main('ckpt/openllama', 1024)

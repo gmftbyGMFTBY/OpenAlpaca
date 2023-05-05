@@ -36,7 +36,7 @@ class DeepSpeedAgent:
         self.ds_engine.step()
         pbar.set_description(f'[!] loss: {round(loss.item(), 4)}; token_acc: {round(mle_acc*100, 2)}')
         pbar.update(1)
-        if self.args['local_rank'] == 0 and current_step % self.args['logging_step'] == 0:
+        if self.args['local_rank'] == 0 and self.args['log_path'] and current_step % self.args['logging_step'] == 0:
             elapsed = pbar.format_dict['elapsed']
             rate = pbar.format_dict['rate']
             remaining = (pbar.total - pbar.n) / rate if rate and pbar.total else 0
@@ -53,5 +53,6 @@ class DeepSpeedAgent:
     def save_model(self, path, current_step):
         ckpt_id = current_step
         self.ds_engine.save_checkpoint(path, ckpt_id)
-        self.vocab.save_pretrained(f'{path}/openllama_hf')
-        print(f'[!] save model into {path} with ckpt_id: {ckpt_id}')
+        self.model.vocab.save_pretrained(path)
+        self.model.model.config.save_pretrained(path)
+        print(f'[!] save model into {path}')

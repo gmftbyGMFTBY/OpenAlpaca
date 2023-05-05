@@ -9,7 +9,7 @@ def get_tokenizer(model):
     return tokenizer
 
 def load_sft_dataset(args):
-    tokenizer = get_tokenizer(args['model_name'])
+    tokenizer = get_tokenizer(args['model_path'])
     dataset_name = args['models'][args['model']]['stage1_train_dataset']
     data_path = args["data_path"]
     data = globals()[dataset_name](data_path, tokenizer, args['max_length'])
