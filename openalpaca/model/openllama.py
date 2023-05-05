@@ -5,7 +5,6 @@ class OpenLLAMAModel(nn.Module):
     def __init__(self, **args):
         super(OpenLLAMAModel, self).__init__()
         self.args = args
-        model = args['model_path']
 
         # init the tokenizer
         self.vocab = LlamaTokenizer.from_pretrained(args['model_path'])
@@ -13,9 +12,8 @@ class OpenLLAMAModel(nn.Module):
         self.vocab.eos_token_id = 2
         self.vocab.pad_token_id = 2
 
-        self.model = LlamaForCausalLM.from_pretrained(model, torch_dtype=torch.float16)
+        self.model = LlamaForCausalLM.from_pretrained(args['model_path'], torch_dtype=torch.float16)
         self.model.cuda(torch.cuda.current_device())
-        self.criterion = nn.CrossEntropyLoss(ignore_index=self.voca.pad_token_id, reduction='none')
         total = sum([param.nelement() for param in self.parameters()])
         print('[!] Model Size: %2fB' % (total/1e9))
 
@@ -49,12 +47,16 @@ class OpenLLAMAModel(nn.Module):
         return string.strip()
 
     def forward(self, inputs):
-        outputs = self.model(input_ids=inputs['input_ids'], attention_mask=inputs['attention_mask'], labels=inputs['labels'])
+        outputs = self.model(
+            input_ids=inputs['input_ids'].cuda(), 
+            attention_mask=inputs['attention_mask'].cuda(), 
+            labels=inputs['labels'].cuda()
+        )
         loss = outputs.loss
-        logits = outputs.logits[:, :-1, :]
-        labels = inputs['labels'][:, 1:]
         
         # calculate the token accuarcy
+        logits = outputs.logits[:, :-1, :].cpu()
+        labels = inputs['labels'][:, 1:]
         chosen_tokens = torch.max(logits, dim=-1)[1]
         gen_acc = (chosen_tokens.reshape(-1) == labels.reshape(-1)).to(torch.long)
         valid_mask = (labels != -100).reshape(-1)

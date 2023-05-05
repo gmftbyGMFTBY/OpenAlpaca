@@ -72,6 +72,9 @@ class SupervisedDataset(Dataset):
         ]
         targets = [example['output'] for example in list_data_dict]
 
+        sources = sources[:10]
+        targets = targets[:10]
+
         data_dict = preprocess(sources, targets, tokenizer, max_length)
 
         self.input_ids = data_dict["input_ids"]

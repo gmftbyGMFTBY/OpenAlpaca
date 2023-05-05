@@ -63,9 +63,9 @@ def main(**args):
     agent = load_model(args)
     torch.distributed.barrier()
 
+    # begin to train
     pbar = tqdm(total=length)    # maximum total number
     current_step = 0
-
     for epoch_i in tqdm(range(args['epochs'])):
         for batch in train_iter:
             agent.train_model(
@@ -75,6 +75,7 @@ def main(**args):
             )
             current_step += 1
     # save at the end of the training
+    torch.distributed.barrier()
     agent.save_model(args['save_path'], 0)
 
 if __name__ == "__main__":

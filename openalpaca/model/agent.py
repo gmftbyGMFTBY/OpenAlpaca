@@ -6,26 +6,22 @@ class DeepSpeedAgent:
         super(DeepSpeedAgent, self).__init__()
         self.args = args
         self.model = model
-        if self.args['mode'] == 'train':
-            # load config parameters of deepspeed
-            ds_params = json.load(open(self.args['ds_config_path']))
-            ds_params['scheduler']['params']['total_num_steps'] = self.args['total_steps']
-            ds_params['scheduler']['params']['warmup_num_steps'] = max(10, int(self.args['total_steps'] * self.args['warmup_rate']))
-            print(f'[!] reset deepspeed training paramters:\n - total_steps: {self.args["total_steps"]}\n - warmup_steps: {ds_params["scheduler"]["params"]["warmup_num_steps"]}\n')
-            self.ds_engine, self.optimizer, _ , _ = deepspeed.initialize(
-                model=self.model, 
-                model_parameters=self.model.parameters(),
-                config_params=ds_params, 
-                dist_init_required=True,
-                args=types.SimpleNamespace(**args)
-            )
-            print(f'[!] init the deepspeed over')
+        # load config parameters of deepspeed
+        ds_params = json.load(open(self.args['ds_config_path']))
+        ds_params['scheduler']['params']['total_num_steps'] = self.args['total_steps']
+        ds_params['scheduler']['params']['warmup_num_steps'] = max(10, int(self.args['total_steps'] * self.args['warmup_rate']))
+        self.ds_engine, self.optimizer, _ , _ = deepspeed.initialize(
+            model=self.model, 
+            model_parameters=self.model.parameters(),
+            config_params=ds_params, 
+            dist_init_required=True,
+            args=types.SimpleNamespace(**args)
+        )
 
     @torch.no_grad()
     def predict(self, batch):
         self.model.eval()
         string = self.model.generate_one_sample(batch)
-        string = string.replace('</s>', '')
         return string
 
     def train_model(self, batch, current_step=0, pbar=None):
@@ -46,13 +42,13 @@ class DeepSpeedAgent:
         mle_acc *= 100
         return mle_acc
     
-    def load_model(self, path, ckpt_id):
-        self.ds_engine.load_checkpoint(path, ckpt_id, custom_load_fn=custom_load_fn, load_module_only=True)
-        print(f'[!] load the latest model from {path} with ckpt id: {ckpt_id}')
-
     def save_model(self, path, current_step):
-        ckpt_id = current_step
-        self.ds_engine.save_checkpoint(path, ckpt_id)
+        # save model parameters
+        self.ds_engine.save_checkpoint(path, current_step)
+        # learned_state_dict = deepspeed.checkpoint.utils.clone_tensors_for_torch_save(self.ds_engine.module.model.state_dict())
+        # self.ds_engine.module.model.save_pretrained(path, state_dict=learned_state_dict, max_shard_size=self.args['max_shard_size'])
+        # save tokenizer
         self.model.vocab.save_pretrained(path)
+        # save configuration
         self.model.model.config.save_pretrained(path)
         print(f'[!] save model into {path}')

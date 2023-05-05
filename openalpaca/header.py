@@ -5,6 +5,7 @@ import deepspeed
 from transformers.deepspeed import HfDeepSpeedConfig
 import transformers
 import numpy as np
+from collections import OrderedDict
 from torch.utils.data import Dataset, DataLoader
 from torch.nn.utils import clip_grad_norm_
 from torch.cuda.amp import autocast, GradScaler
@@ -24,7 +25,7 @@ import logging
 from copy import deepcopy
 import ipdb
 import argparse
-from transformers import LlamaTokenizer, LlamaForCausalLM
+from transformers import LlamaTokenizer, LlamaForCausalLM, LlamaConfig
 from torch.nn.utils.rnn import pad_sequence
 
 logging.getLogger("transformers").setLevel(logging.WARNING)

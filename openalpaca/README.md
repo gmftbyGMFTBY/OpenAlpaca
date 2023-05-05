@@ -49,7 +49,15 @@ Then, you could get the fine-tuned checkpoints (`--save_path`)
 
 ### 3. Test the model
 
-Test the model by running the following command:
+Split the big model file `pytorch_model.bin` created in previous steps into multiple shards, you could run the following command:
+
+```bash
+./scripts/make_shards.sh
+```
+
+This command will load the `pytorch_model.bin` and split it into multiple shards. The deepspeed checkpoints and the `pytorch_model.bin` will be deleted for saving disk memory.
+
+Then, test the model by running the following command:
 
 ```bash
 ./scripts/inference.sh
