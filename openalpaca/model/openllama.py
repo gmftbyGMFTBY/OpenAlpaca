@@ -64,3 +64,4 @@ class OpenLLAMAModel(nn.Module):
         valid_tokens = gen_acc & valid_mask
         gen_acc = valid_tokens.sum().item() / valid_mask.sum().item()
         return loss, gen_acc
+ 

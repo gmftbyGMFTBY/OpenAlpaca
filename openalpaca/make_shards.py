@@ -23,7 +23,7 @@ def main(model_path, max_shard_size):
     # delete the pytorch_model.bin and deepspeed checkpoints for saving disk memory
     os.remove(f'{model_path}/pytorch_model.bin')
     os.system(f'rm -rf {model_path}/0')
-    os.system(f'rm latest zero_to_fp32.py')
+    os.system(f'rm {model_path}/latest {model_path}/zero_to_fp32.py')
 
 if __name__ == "__main__":
     args = parser_args()

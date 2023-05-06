@@ -62,3 +62,11 @@ Then, test the model by running the following command:
 ```bash
 ./scripts/inference.sh
 ```
+
+### 4. Load the Gradio Demo
+
+Please run this command to load the gradio demo `http://localhost:23001`
+
+```bash
+./scripts/demo.sh
+```

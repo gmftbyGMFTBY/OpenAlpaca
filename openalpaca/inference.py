@@ -1,35 +1,41 @@
 from header import *
 
-def main(model_path, max_length):
-    model = LlamaForCausalLM.from_pretrained(model_path).cuda()
-    tokenizer = LlamaTokenizer.from_pretrained(model_path)
+def parser_args():
+    parser = argparse.ArgumentParser(description='train parameters')
+    parser.add_argument('--model_path', default='../ckpt/openllama', type=str)
+    parser.add_argument('--max_length', default=512, type=int)
+    parser.add_argument('--generate_len', default=512, type=int)
+    parser.add_argument('--top_k', default=50, type=int)
+    parser.add_argument('--top_p', default=0.92, type=float)
+    return parser.parse_args()
+
+
+def main(args):
+    model = LlamaForCausalLM.from_pretrained(args['model_path']).cuda()
+    tokenizer = LlamaTokenizer.from_pretrained(args['model_path'])
 
     # instruction = 'What is the Natural Language Processing'
-    instruction = input('Input your instruction: ')
+    instruction = input('[!] Input your instruction: ')
     prompt_no_input = f'### Instruction:\n{instruction}\n\n### Response:'
     tokens = tokenizer.encode(prompt_no_input)
     tokens = [1] + tokens + [2] + [1]
-    tokens = torch.LongTensor(tokens[-max_length:]).unsqueeze(0).cuda()
+    tokens = torch.LongTensor(tokens[-args['max_length']+args['generate_len']:]).unsqueeze(0).cuda()
 
-    instance = {
-        'input_ids': tokens,
-        'top_k': 50,
-        'top_p': 0.9,
-        'generate_len': 256
-    }
     length = len(tokens[0])
-    rest = model.generate(
-        input_ids=tokens, 
-        max_length=length+instance['generate_len'], 
-        use_cache=True, 
-        do_sample=True, 
-        top_p=instance['top_p'], 
-        top_k=instance['top_k']
-    )
+    with torch.no_grad():
+        rest = model.generate(
+            input_ids=tokens, 
+            max_length=length+args['generate_len'], 
+            use_cache=True, 
+            do_sample=True, 
+            top_p=args['top_p'], 
+            top_k=args['top_k']
+        )
     output = rest[0][length:]
     string = tokenizer.decode(output, skip_special_tokens=False)
     string = string.replace('<s>', '').replace('</s>', '').strip()
-    print(f'[!] Generation results: {string}')
+    print(f'[!] OpenAlpaca generation: {string}')
 
 if __name__ == "__main__":
-    main('ckpt/openllama', 1024)
+    args = vars(parser_args())
+    main(args)
