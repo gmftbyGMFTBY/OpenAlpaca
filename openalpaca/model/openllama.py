@@ -47,20 +47,20 @@ class OpenLLAMAModel(nn.Module):
         return string.strip()
 
     def forward(self, inputs):
+        labels = inputs['labels'].cuda()
         outputs = self.model(
             input_ids=inputs['input_ids'].cuda(), 
             attention_mask=inputs['attention_mask'].cuda(), 
-            labels=inputs['labels'].cuda()
+            labels=labels
         )
         loss = outputs.loss
         
         # calculate the token accuarcy
-        logits = outputs.logits[:, :-1, :].cpu()
-        labels = inputs['labels'][:, 1:]
+        logits = outputs.logits[:, :-1, :]
+        labels = labels[:, 1:]
         chosen_tokens = torch.max(logits, dim=-1)[1]
         gen_acc = (chosen_tokens.reshape(-1) == labels.reshape(-1)).to(torch.long)
         valid_mask = (labels != -100).reshape(-1)
         valid_tokens = gen_acc & valid_mask
         gen_acc = valid_tokens.sum().item() / valid_mask.sum().item()
         return loss, gen_acc
- 
