@@ -5,7 +5,7 @@ from .sft_dataset import *
 def get_tokenizer(model):
     tokenizer = LlamaTokenizer.from_pretrained(model)
     tokenizer.bos_token_id, tokenizer.eos_token_id = 1, 2
-    tokenizer.pad_token = tokenizer.eos_token
+    tokenizer.pad_token = -100
     return tokenizer
 
 def load_sft_dataset(args):

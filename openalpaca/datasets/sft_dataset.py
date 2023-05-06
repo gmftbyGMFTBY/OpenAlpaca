@@ -45,7 +45,7 @@ def preprocess(
         s_tokens = tokenizer.encode(s)
         t_tokens = tokenizer.encode(t)
         inpt = [1] + s_tokens + [2] + [1] + t_tokens + [2]
-        label = [1] + [2] * len(s_tokens) + [2] + [1] + t_tokens + [2]
+        label = [1] + [-100] * len(s_tokens) + [2] + [1] + t_tokens + [2]
         inpt = inpt[-max_length:]
         label = label[-max_length:]
         input_ids.append(torch.LongTensor(inpt))
@@ -63,7 +63,6 @@ class SupervisedDataset(Dataset):
         # for openllama tokenizer
         self.tokenizer.bos_token_id = 1    #  eos_token_id is 2
         self.tokenizer.eos_token_id = 2    #  eos_token_id is 2
-        self.tokenizer.pad_token_id = 2    #  eos_token_id is 2
 
         prompt_input, prompt_no_input = PROMPT_DICT["prompt_input"], PROMPT_DICT["prompt_no_input"]
         sources = [
@@ -89,11 +88,11 @@ class SupervisedDataset(Dataset):
         input_ids = torch.nn.utils.rnn.pad_sequence(
             input_ids,
             batch_first=True,
-            padding_value=self.tokenizer.pad_token_id
+            padding_value=self.tokenizer.eos_token_id
         )
-        labels = torch.nn.utils.rnn.pad_sequence(labels, batch_first=True, padding_value=self.tokenizer.pad_token_id)
+        labels = torch.nn.utils.rnn.pad_sequence(labels, batch_first=True, padding_value=-100)
         return dict(
             input_ids=input_ids,
             labels=labels,
-            attention_mask=input_ids.ne(self.tokenizer.pad_token_id),
+            attention_mask=input_ids.ne(self.tokenizer.eos_token_id),
         )

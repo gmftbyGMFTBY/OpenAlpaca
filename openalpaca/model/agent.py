@@ -18,12 +18,6 @@ class DeepSpeedAgent:
             args=types.SimpleNamespace(**args)
         )
 
-    @torch.no_grad()
-    def predict(self, batch):
-        self.model.eval()
-        string = self.model.generate_one_sample(batch)
-        return string
-
     def train_model(self, batch, current_step=0, pbar=None):
         self.ds_engine.module.train()
         loss, mle_acc = self.ds_engine(batch)
